@@ -69,35 +69,11 @@ let hospital_data = [{
     key: 'h13',
     name : '중구보건소 (선별)',
     address : '대한민국 대구광역시 중구 태평로3가 174-1'
+  }, {
+    key: 'h14',
+    name : '구)계명대동산병원 (선별)',
+    address : '대한민국 대구광역시 중구 성내2동 달성로 56'
   }];
-let virus_area_data = [{
-    key: 'v0',
-    name : '새로난한방병원',
-    address : '대구광역시 수성구 달구벌대로 2492'
-  },{
-    key: 'v1',
-    name : '대구교회',
-    address : '대구광역시 남구 대명로 81'
-  }, {
-    key: 'v2',
-    name : '퀸벨호텔',
-    address : '대구광역시 동구 동촌로 200'
-  }, {
-    key: 'v3',
-    name : '동대구역',
-    address : '대구광역시 동구 동대구로 550'
-  }, {
-    key: 'v4',
-    name : 'S-OIL 미니주유소',
-    address : '대구광역시 수성구 동대구로 142 미니주유소'
-  }, {
-    key: 'v5',
-    name : '대구서부터미널',
-    address : '대한민국 대구광역시 남구 대명11동 1135-1'
-}];
-let virus_infectee = [{
-
-}]
   /* 템플릿
   , {
     name : '',
@@ -301,7 +277,7 @@ class App extends Component {
                 .centerBar(true)
                 .colors('#4EB8B9')
                 .gap(1)
-                .x(d3.scaleTime().domain([new Date(2020, 0, 20), new Date(2020, 2, 30)]))
+                .x(d3.scaleTime().domain([new Date(2020, 0, 10), new Date(2020, 2, 10)]))
                 //.y(d3.scaleLinear().domain([0, 100]))
                 .round(d3.timeDay.round)
                 .alwaysUseRounding(true)
