@@ -1,13 +1,13 @@
 .App {
   text-align: center;
   width: 100%;
-  height: 1000px;
 }
 .App-logo {
   height: 40vmin;
   pointer-events: none;
 }
-
+#root{ height:100vh; }
+#map.App {height: 100vh;}
 @media (prefers-reduced-motion: no-preference) {
   .App-logo {
     animation: App-logo-spin infinite 20s linear;
@@ -25,10 +25,13 @@
   color: white;
 }
 
+.MuiCardContent-root:last-child {
+  padding-bottom: 0px !important;
+}
+
 .App-link {
   color: #61dafb;
 }
-
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);
