@@ -182,220 +182,225 @@ class App extends Component {
          * Step 2: Loead data from csv file
          */
         // FinalZipCode,location,incorporationDate,Year,IndustryCode,indust_nm
-        d3.csv(infectee_data).then(function (data) {
-            /**
-             * Step3 Create Dimension that we'll need
-             */
-            var ndx = crossfilter(data);    //Convert CSV strings to Crossfilter Object
-            var all = ndx.groupAll();       //Grouping Crossfilter Object's real data. It's used for using the function whitch is filtering top categories
+        let virus_render = () => {
+            d3.csv(infectee_data).then(function (data) {
+                /**
+                 * Step3 Create Dimension that we'll need
+                 */
+                var ndx = crossfilter(data);    //Convert CSV strings to Crossfilter Object
+                var all = ndx.groupAll();       //Grouping Crossfilter Object's real data. It's used for using the function whitch is filtering top categories
 
-            var dateFormatSpecifier = '%m/%d/%Y'; //Define day format to read CSV file. The format is  "month/day/year"
-            var dateFormat = d3.timeFormat(dateFormatSpecifier); //Convert day string to javascript day object format
-            var dateFormatParser = d3.timeParse(dateFormatSpecifier); //http://learnjsdata.com/time.html
-            var numberFormat = d3.format('.2f'); //Rounds
+                var dateFormatSpecifier = '%m/%d/%Y'; //Define day format to read CSV file. The format is  "month/day/year"
+                var dateFormat = d3.timeFormat(dateFormatSpecifier); //Convert day string to javascript day object format
+                var dateFormatParser = d3.timeParse(dateFormatSpecifier); //http://learnjsdata.com/time.html
+                var numberFormat = d3.format('.2f'); //Rounds
 
-            data.forEach(function (d) {
-                d.dd = dateFormatParser(d.visit_date); //make date type using incorperationDate in CSV file.
-                d.day = d3.timeDay(d.dd); // pre-calculate month for better performance
-            });
-
-
-            // Determine a histogram of percent changes
-            var location = ndx.dimension(function (d) { //make data dimension for the graph
-                return d.location_name; //the sum of the group by x value which is location data in dimension
-            });
-            var locationGroup = location.group(); //grouping dimension data by x axis 
-            locationGroup = getTops(locationGroup);//get top 10 groups in locationGroup
-
-            // Determine a histogram of percent changes
-            var infectee = ndx.dimension(function (d) { //make data dimension for the graph
-                return d.infectee_id;  //the sum of the group by x value which is IndustryCode data in dimension
-            });
-            var infecteeGroup = infectee.group(); //grouping dimension data by x axis 
-            infecteeGroup = getTops(infecteeGroup); //get top 10 groups in infectee
+                data.forEach(function (d) {
+                    d.dd = dateFormatParser(d.visit_date); //make date type using incorperationDate in CSV file.
+                    d.day = d3.timeDay(d.dd); // pre-calculate month for better performance
+                });
 
 
-            // Dimension by month
-            var moveDays = ndx.dimension(function (d) {
-                return d.day; //the sum of the group by x value which is month data in dimension
-            });
-            //Group by total volume within move, and scale down result
-            var volumeByDayGroup = moveDays.group().reduceSum(function (d) {
-                return 1; 
-            });
+                // Determine a histogram of percent changes
+                var location = ndx.dimension(function (d) { //make data dimension for the graph
+                    return d.location_name; //the sum of the group by x value which is location data in dimension
+                });
+                var locationGroup = location.group(); //grouping dimension data by x axis 
+                locationGroup = getTops(locationGroup);//get top 10 groups in locationGroup
 
-            // Dimension by full date
-            var dateDimension = ndx.dimension(function (d) {
-                return d.dd;
-            });
-            
-            locationChart
-                .width(200)
-                .height(70)
-                .margins({ top: 10, right: 50, bottom: 20, left: 25 })
-                .dimension(location)
-                .group(locationGroup)
-                .colors('#FFCC4E')
-                .elasticY(true) //.elasticY and .elasticX determine whether the chart should rescale each axis to fit the data.
-                .x(d3.scaleOrdinal().domain(locationGroup))
-                .xUnits(dc.units.ordinal)
-                .barPadding(0.05)
-                .outerPadding(0.05)
-                .renderHorizontalGridLines(true)
-                .on('renderlet',function(chart){
-                    chart.selectAll("g.x text")
-                    .attr('dx', '-15')
-                    .attr('transform', "rotate(-15)");
-                })
-
-            locationChart.yAxis().ticks(5);
+                // Determine a histogram of percent changes
+                var infectee = ndx.dimension(function (d) { //make data dimension for the graph
+                    return d.infectee_id;  //the sum of the group by x value which is IndustryCode data in dimension
+                });
+                var infecteeGroup = infectee.group(); //grouping dimension data by x axis 
+                infecteeGroup = getTops(infecteeGroup); //get top 10 groups in infectee
 
 
-            infecteeChart
-                .width(200)
-                .height(70)
-                .margins({ top: 10, right: 50, bottom: 20, left: 25 })
-                .dimension(infectee)
-                .group(infecteeGroup)
-                .colors('#F9C0C7')
-                .elasticY(true) //.elasticY and .elasticX determine whether the chart should rescale each axis to fit the data.
-                .x(d3.scaleOrdinal().domain(infecteeGroup))
-                .xUnits(dc.units.ordinal)
-                .barPadding(0.05)
-                .outerPadding(0.05)
-                .renderHorizontalGridLines(true)
-    
-            infecteeChart.yAxis().ticks(5);
+                // Dimension by month
+                var moveDays = ndx.dimension(function (d) {
+                    return d.day; //the sum of the group by x value which is month data in dimension
+                });
+                //Group by total volume within move, and scale down result
+                var volumeByDayGroup = moveDays.group().reduceSum(function (d) {
+                    return 1; 
+                });
 
-            // Determine a histogram of percent changes
-            volumeChart
-                .width(400) /* dc.barChart('#monthly-volume-chart', 'chartGroup'); */
-                .height(70)    //height
-                .margins({ top: 10, right: 50, bottom: 20, left: 25 })
-                .dimension(moveDays)  //dimension
-                .group(volumeByDayGroup)  //group
-                .centerBar(true)
-                .colors('#4EB8B9')
-                .gap(1)
-                .x(d3.scaleTime().domain([new Date(2020, 0, 10), new Date(2020, 2, 10)]))
-                //.y(d3.scaleLinear().domain([0, 100]))
-                .round(d3.timeDay.round)
-                .alwaysUseRounding(true)
-                .renderHorizontalGridLines(true) //Grid liner
-                .xUnits(d3.timeDay);
-
-            volumeChart.yAxis().ticks(5);
-
-            dataTable /* dc.dataTable('.dc-data-table', 'chartGroup') */
-                .dimension(dateDimension)
-                // Data table does not use crossfilter group but rather a closure
-                // as a grouping function
-                .group(function (d) {
-                    var format = d3.format('02d');
-                    return '';
-                })
-                // (_optional_) max number of records to be shown, `default = 25`
-                .size(100)
-                // There are several ways to specify the columns; see the data-table documentation.
-                // This code demonstrates generating the column header automatically based on the columns.
-                .columns([{
-                        label: "확진자",
-                        format: function (d) {
-                            return d.infectee_id;
-                        },
-                        
-                    },{
-                        label: "위치",
-                        format: function (d) {
-                            return d.location_name;
-                        }
-                    },{
-                        label: "방문일자",
-                        format: function (d) {
-                            return d.visit_date;
-                        }
-                    },{
-                        label: "주소",
-                        format: function (d) {
-                            return d.location_address;
-                        }
-                    }
-                ])
-                // (_optional_) sort using the given field, `default = function(d){return d;}`
-                .sortBy(function (d) {
+                // Dimension by full date
+                var dateDimension = ndx.dimension(function (d) {
                     return d.dd;
-                })
-                // (_optional_) sort order, `default = d3.ascending`
-                .order(d3.ascending)
-                // (_optional_) custom renderlet to post-process chart using [D3](http://d3js.org)
-                .on('renderlet', function (table) {
-                    table.selectAll('.dc-table-group').classed('info', false);
-                    if(document.querySelector(".dc-table-group") != undefined)
-                        document.querySelector(".dc-table-group").parentNode.removeChild(document.querySelector(".dc-table-group"));
-                    try {
-                        // 위치 마커에 표시
-                        if(virus_markers.length > 0) {
-                            virus_markers.map((item) => {
-                                item.setMap(null);
-                            });
-                            virus_markers = [];
-                            virus_overlay.map((item) => {
-                                item.setMap(null);
-                            });
-                            virus_overlay = [];
-                            virus_infowindow.map((item) => {
-                                item.setMap(null);
-                            });
-                            virus_infowindow = [];
+                });
+                
+                
+                locationChart
+                    .width(400)
+                    .height(80)
+                    .margins({ top: 10, right: 50, bottom: 30, left: 25 })
+                    .dimension(location)
+                    .group(locationGroup)
+                    .colors('#FFCC4E')
+                    .elasticY(true) //.elasticY and .elasticX determine whether the chart should rescale each axis to fit the data.
+                    .x(d3.scaleOrdinal().domain(locationGroup))
+                    .xUnits(dc.units.ordinal)
+                    .barPadding(0.05)
+                    .outerPadding(0.05)
+                    .renderHorizontalGridLines(true)
+                    .on('renderlet',function(chart){
+                        chart.selectAll("g.x text")
+                        .attr('dx', '-15')
+                        .attr('transform', "rotate(-15)");
+                    })
+
+                locationChart.yAxis().ticks(5);
+
+
+                infecteeChart
+                    .width(400)
+                    .height(70)
+                    .margins({ top: 10, right: 50, bottom: 20, left: 25 })
+                    .dimension(infectee)
+                    .group(infecteeGroup)
+                    .colors('#F9C0C7')
+                    .elasticY(true) //.elasticY and .elasticX determine whether the chart should rescale each axis to fit the data.
+                    .x(d3.scaleOrdinal().domain(infecteeGroup))
+                    .xUnits(dc.units.ordinal)
+                    .barPadding(0.05)
+                    .outerPadding(0.05)
+                    .renderHorizontalGridLines(true)
+        
+                infecteeChart.yAxis().ticks(5);
+
+                // Determine a histogram of percent changes
+                volumeChart
+                    .width(400) /* dc.barChart('#monthly-volume-chart', 'chartGroup'); */
+                    .height(70)    //height
+                    .margins({ top: 10, right: 50, bottom: 20, left: 25 })
+                    .dimension(moveDays)  //dimension
+                    .group(volumeByDayGroup)  //group
+                    .centerBar(true)
+                    .colors('#4EB8B9')
+                    .gap(1)
+                    .x(d3.scaleTime().domain([new Date(2020, 0, 10), new Date(2020, 2, 10)]))
+                    //.y(d3.scaleLinear().domain([0, 100]))
+                    .round(d3.timeDay.round)
+                    .alwaysUseRounding(true)
+                    .renderHorizontalGridLines(true) //Grid liner
+                    .xUnits(d3.timeDay);
+
+                volumeChart.yAxis().ticks(5);
+                
+                dataTable /* dc.dataTable('.dc-data-table', 'chartGroup') */
+                    .dimension(dateDimension)
+                    // Data table does not use crossfilter group but rather a closure
+                    // as a grouping function
+                    .group(function (d) {
+                        var format = d3.format('02d');
+                        return '';
+                    })
+                    // (_optional_) max number of records to be shown, `default = 25`
+                    .size(100)
+                    // There are several ways to specify the columns; see the data-table documentation.
+                    // This code demonstrates generating the column header automatically based on the columns.
+                    .columns([{
+                            label: "확진자",
+                            format: function (d) {
+                                return d.infectee_id;
+                            },
                             
+                        },{
+                            label: "위치",
+                            format: function (d) {
+                                return d.location_name;
+                            }
+                        },{
+                            label: "방문일자",
+                            format: function (d) {
+                                return d.visit_date;
+                            }
+                        },{
+                            label: "주소",
+                            format: function (d) {
+                                return d.location_address;
+                            }
                         }
-                        let value = document.getElementById("virus-area-table").tBodies[0].innerText.split(/['\t','\nig']+/);
-                        //value.shift();
-                         /*
-                        [{
-                            location: 'test', 
-                            count: 2,
-                            items: {}, {}
-                        }]
-                        */
-                        let virus_area = []; 
-                        let key_location =[];
-                        value.map((items, index)=>{
-                            if((index + 1) % 4 === 0) {
-                                //중복 없는경우
-                                let idx = key_location.indexOf(value[index-2]);
-                                if(idx === -1) {
-                                    key_location.push(value[index-2]);
-                                    virus_area.push({
-                                        name: value[index-2],
-                                        address: value[index],
-                                        count: 1,
-                                        type: 'virus_area',
-                                        items: [{
+                    ])
+                    // (_optional_) sort using the given field, `default = function(d){return d;}`
+                    .sortBy(function (d) {
+                        return d.dd;
+                    })
+                    // (_optional_) sort order, `default = d3.ascending`
+                    .order(d3.ascending)
+                    // (_optional_) custom renderlet to post-process chart using [D3](http://d3js.org)
+                    .on('renderlet', function (table) {
+                        table.selectAll('.dc-table-group').classed('info', false);
+                        if(document.querySelector(".dc-table-group") != undefined)
+                            document.querySelector(".dc-table-group").parentNode.removeChild(document.querySelector(".dc-table-group"));
+                        try {
+                            // 위치 마커에 표시
+                            if(virus_markers.length > 0) {
+                                virus_markers.map((item) => {
+                                    item.setMap(null);
+                                });
+                                virus_markers = [];
+                                virus_overlay.map((item) => {
+                                    item.setMap(null);
+                                });
+                                virus_overlay = [];
+                                virus_infowindow.map((item) => {
+                                    item.setMap(null);
+                                });
+                                virus_infowindow = [];
+                                
+                            }
+                            let value = document.getElementById("virus-area-table").tBodies[0].innerText.split(/['\t','\nig']+/);
+                            //value.shift();
+                            /*
+                            [{
+                                location: 'test', 
+                                count: 2,
+                                items: {}, {}
+                            }]
+                            */
+                            let virus_area = []; 
+                            let key_location =[];
+                            value.map((items, index)=>{
+                                if((index + 1) % 4 === 0) {
+                                    //중복 없는경우
+                                    let idx = key_location.indexOf(value[index-2]);
+                                    if(idx === -1) {
+                                        key_location.push(value[index-2]);
+                                        virus_area.push({
+                                            name: value[index-2],
+                                            address: value[index],
+                                            count: 1,
+                                            type: 'virus_area',
+                                            items: [{
+                                                infectee : value[index-3],
+                                                date : value[index-1]
+                                            }]
+                                        });
+                                    } else {
+                                        virus_area[idx].count ++;
+                                        virus_area[idx].items.push({
                                             infectee : value[index-3],
                                             date : value[index-1]
-                                        }]
-                                    });
-                                } else {
-                                    virus_area[idx].count ++;
-                                    virus_area[idx].items.push({
-                                        infectee : value[index-3],
-                                        date : value[index-1]
-                                    });
+                                        });
+                                    }
                                 }
-                            }
-                        });
-                        virus_area.map((item)=> {
-                            run_drawer(item);
-                        });
-                    } catch (error) {
-                        return;
-                    }
-                   
-                });
-            
-        });
+                            });
+                            virus_area.map((item)=> {
+                                run_drawer(item);
+                            });
+                            
+                        } catch (error) {
+                            return;
+                        }
+                        
+                    });
+                    dc.renderAll();
+                
+            });
 
+        }
         /**
          * Get Top x lanks from the source group.
          * @param {source_group} source_group 
@@ -431,13 +436,10 @@ class App extends Component {
                 hospital_data.map((item)=> {
                     run_drawer(item);
                 });
-
-                        
+                
+                
                 //simply call `.renderAll()` to render all charts on the page
-                
-                dc.renderAll();
-                
-                
+                virus_render();
             });
         }
     };
@@ -457,7 +459,7 @@ class App extends Component {
         }, card1_style = {
             position: 'absolute',
             zIndex: 2,
-            top: '4em',
+            top: '4.3em',
             left: '0.4em',
             width: '24.5em'
         }, card2_style = {
@@ -466,17 +468,17 @@ class App extends Component {
             top: '19em',
             left: '0.4em',
             heigh: '5em',
-            width: '12.1em'
+            width: '24.5em'
         }, card3_style = {
             position: 'absolute',
             zIndex: 2,
-            top: '19em',
-            left: '12.8em',
-            width: '12.1em'
+            top: '26.8em',
+            left: '0.4em',
+            width: '24.5em'
         }, card4_style = {
             position: 'absolute',
             zIndex: 2,
-            top: '12.3em',
+            top: '12.9em',
             left: '0.4em',
             width: '24.5em'
         },display = {
@@ -540,8 +542,8 @@ class App extends Component {
                         </div>
                     </CardContent>
                 </Card>
-                {/* <Card className="Card2" style={card2_style}>
-                    <CardContent className ={cardContent}>
+                <Card className="Card2" style={card2_style}>
+                    <CardContent >
                         <strong>확진자 장소별 방문 일수</strong>
                         <div id="location-chart">
                             <span className="reset" style={display}>range:
@@ -553,7 +555,7 @@ class App extends Component {
                     </CardContent>
                 </Card>
                 <Card className="Card3" style={card3_style}>
-                    <CardContent className ={cardContent}>
+                    <CardContent >
                         <strong>확진자 누적 방문 일수</strong>
                         <div id="infectee-chart">
                             <span className="reset" style={display}>range:
@@ -563,7 +565,7 @@ class App extends Component {
                             <div className="clearfix"></div>
                         </div>
                     </CardContent>
-                </Card> */}
+                </Card>
                 <Card className="Card4" style={card4_style}>
                     <CardContent>
                         <table className="table table-hover dc-data-table" id="virus-area-table" style={table} onClick={handleTableClick} ></table>
@@ -571,9 +573,10 @@ class App extends Component {
                 </Card>
                 <div style={floating_style}>
                     [데이터 출저]: 질병관리본부 제공, 뉴스 제보<br/>
-                    위치별로 확진자가 방문한 일정 표현. <br/>
+                    위치별로 확진자가 방문한 일정 표현 <br/>
                     추가정보 및 잘못된 정보 제보: <a href="mailto:corona.developer@gmail.com">corona.developer@gmail.com</a><br/>
                     지도 API: 카카오, 위치검색 API: 카카오, 시각화: dc.js 
+                    이슈: 초기 로딩시 데이터가 제대로 안나올경우 새로고침 하세요(수정중) 
                 </div>
             </div>
         );
